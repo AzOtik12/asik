@@ -1,19 +1,16 @@
 """Подземье — небольшой рогалик в духе The Binding of Isaac.
-
 Запуск:  python main.py
 Управление: WASD — движение, стрелки — стрельба, Space — рывок,
 B — бомба, P/Esc — пауза, M — звук, R — новая игра после победы/поражения.
 Все спрайты рисуются кодом; сторонние изображения не нужны.
 """
 from __future__ import annotations
-
 import math
 import random
 import sys
 from array import array
 from dataclasses import dataclass, field
 from pathlib import Path
-
 import pygame
 
 # ---------------------------------------------------------------------------
@@ -25,7 +22,6 @@ ARENA = pygame.Rect(40, 128, 824, 552)
 INNER = pygame.Rect(62, 150, 780, 508)
 PANEL = pygame.Rect(884, 128, 208, 552)
 DOOR_HALF = 42
-
 BG = (16, 22, 30)
 FLOOR_A = (38, 48, 56)
 FLOOR_B = (42, 53, 61)
@@ -39,41 +35,37 @@ RED = (235, 92, 92)
 GREEN = (120, 210, 130)
 PURPLE = (178, 130, 235)
 ORANGE = (245, 150, 70)
-
-DIRS = {"N": (0, -1), "S": (0, 1), "W": (-1, 0), "E": (1, 0)}
-OPPOSITE = {"N": "S", "S": "N", "W": "E", "E": "W"}
+DIRS = { "N ": (0, -1),  "S ": (0, 1),  "W ": (-1, 0),  "E ": (1, 0)}
+OPPOSITE = { "N ":  "S ",  "S ":  "N ",  "W ":  "E ",  "E ":  "W "}
 ROOM_LAYOUT = {
-    (1, 2): ("start", "Вход"),
-    (0, 2): ("treasure", "Кладовая"),
-    (2, 2): ("combat", "Грибной зал"),
-    (1, 1): ("combat", "Перекрёсток"),
-    (0, 1): ("combat", "Споровый грот"),
-    (2, 1): ("combat", "Караульня"),
-    (1, 0): ("boss", "Логово Стража"),
-    (0, 0): ("secret", "Тайник"),
+    (1, 2): ( "start ",  "Вход "),
+    (0, 2): ( "treasure ",  "Кладовая "),
+    (2, 2): ( "combat ",  "Грибной зал "),
+    (1, 1): ( "combat ",  "Перекрёсток "),
+    (0, 1): ( "combat ",  "Споровый грот "),
+    (2, 1): ( "combat ",  "Караульня "),
+    (1, 0): ( "boss ",  "Логово Стража "),
+    (0, 0): ( "secret ",  "Тайник "),
 }
 COMBAT_TOTAL = 4
 BOSS_REQUIRED = 3
-
 UPGRADES = [
-    ("damage", "Острый кристалл", "+0.5 к урону снарядов", RED),
-    ("rate", "Быстрые руки", "Скорострельность +18%", CYAN),
-    ("speed", "Лёгкие сапоги", "+22 к скорости бега", GREEN),
-    ("heart", "Сердце контейнер", "+2 к максимуму здоровья, лечит 2", RED),
-    ("pierce", "Пробивание", "Снаряды пробивают ещё одного врага", PURPLE),
-    ("double", "Двойной выстрел", "Каждый выстрел выпускает 2 снаряда", GOLD),
+    ( "damage ",  "Острый кристалл ",  "+0.5 к урону снарядов ", RED),
+    ( "rate ",  "Быстрые руки ",  "Скорострельность +18% ", CYAN),
+    ( "speed ",  "Лёгкие сапоги ",  "+22 к скорости бега ", GREEN),
+    ( "heart ",  "Сердце контейнер ",  "+2 к максимуму здоровья, лечит 2 ", RED),
+    ( "pierce ",  "Пробивание ",  "Снаряды пробивают ещё одного врага ", PURPLE),
+    ( "double ",  "Двойной выстрел ",  "Каждый выстрел выпускает 2 снаряда ", GOLD),
+    ( "bomb_belt ",  "Сапёрный пояс ",  "+3 бомбы, лечит 2 HP ", ORANGE),
 ]
-
 
 def clamp(value, low, high):
     return max(low, min(high, value))
-
 
 def vec(x=0.0, y=0.0):
     if isinstance(x, (pygame.Vector2, tuple, list)):
         return pygame.Vector2(x)
     return pygame.Vector2(float(x), float(y))
-
 
 def door_center(direction):
     if direction == "N":
@@ -84,12 +76,10 @@ def door_center(direction):
         return vec(INNER.left, INNER.centery)
     return vec(INNER.right, INNER.centery)
 
-
 def circle_rect_collision(pos, radius, rect):
     cx = clamp(pos.x, rect.left, rect.right)
     cy = clamp(pos.y, rect.top, rect.bottom)
     return (pos.x - cx) ** 2 + (pos.y - cy) ** 2 < radius * radius
-
 
 def move_with_rocks(entity, delta, rocks):
     """Простое скольжение вдоль препятствий по осям."""
@@ -107,7 +97,6 @@ def move_with_rocks(entity, delta, rocks):
                 entity.pos.y = rock.top - entity.radius
             elif delta.y < 0:
                 entity.pos.y = rock.bottom + entity.radius
-
 
 # ---------------------------------------------------------------------------
 # Сущности
@@ -132,7 +121,6 @@ class Player:
     bombs: int = 2
     coins: int = 0
 
-
 @dataclass
 class Enemy:
     kind: str
@@ -148,7 +136,6 @@ class Enemy:
     flash: float = 0
     summon_timer: float = 5
 
-
 @dataclass
 class Bullet:
     pos: pygame.Vector2
@@ -160,14 +147,12 @@ class Bullet:
     pierce: int = 0
     color: tuple = CYAN
 
-
 @dataclass
 class Pickup:
     kind: str
     pos: pygame.Vector2
     upgrade: tuple | None = None
     bob: float = 0
-
 
 @dataclass
 class Particle:
@@ -178,7 +163,6 @@ class Particle:
     color: tuple
     size: float
 
-
 @dataclass
 class FloatText:
     pos: pygame.Vector2
@@ -186,12 +170,10 @@ class FloatText:
     color: tuple
     life: float = 1.0
 
-
 @dataclass
 class Bomb:
     pos: pygame.Vector2
     fuse: float = 1.15
-
 
 @dataclass
 class Room:
@@ -207,7 +189,6 @@ class Room:
     visited: bool = False
     spawned: bool = False
     reward_given: bool = False
-
 
 # ---------------------------------------------------------------------------
 # Игра
@@ -714,6 +695,9 @@ class Game:
             p.pierce += 1
         elif uid == "double":
             p.double = True
+        elif uid == "bomb_belt":
+            p.bombs += 3
+            p.hp = min(p.max_hp, p.hp + 2)
         if uid in ("pierce", "double") and upgrade in self.upgrade_pool:
             self.upgrade_pool.remove(upgrade)
         self.notify(f"{name}: {desc}", color)
@@ -1173,7 +1157,6 @@ class Game:
             self.draw()
         pygame.quit()
 
-
 def enemy_color(kind):
     return {
         "crawler": (210, 110, 130),
@@ -1182,13 +1165,11 @@ def enemy_color(kind):
         "boss": GREEN,
     }.get(kind, RED)
 
-
 def draw_heart(surface, center, size, color):
     x, y = center
     pygame.draw.circle(surface, color, (x - size * 0.45, y - size * 0.25), size * 0.55)
     pygame.draw.circle(surface, color, (x + size * 0.45, y - size * 0.25), size * 0.55)
     pygame.draw.polygon(surface, color, [(x - size, y), (x + size, y), (x, y + size)])
-
 
 def main():
     seed = None
@@ -1200,7 +1181,6 @@ def main():
             return 1
     Game(seed=seed).run()
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
